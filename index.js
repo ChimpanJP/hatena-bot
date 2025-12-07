@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits } from "discord.js";
+import { Client, GatewayIntentBits, Events } from "discord.js";
 import cron from "node-cron";
 import Parser from "rss-parser";
 import dotenv from "dotenv";
@@ -7,7 +7,8 @@ dotenv.config();
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent // ← !test を読むために必要
   ]
 });
 
@@ -22,9 +23,9 @@ async function fetchHatenaTop10() {
     const feed = await parser.parseURL(RSS_URL);
     const items = feed.items.slice(0, 10);
 
-    return items.map((item, i) => {
-      return `**${i + 1}. ${item.title}**\n${item.link}`;
-    }).join("\n\n");
+    return items
+      .map((item, i) => `**${i + 1}. ${item.title}**\n${item.link}`)
+      .join("\n\n");
 
   } catch (err) {
     return `取得エラー：${err.message}`;
@@ -49,6 +50,20 @@ client.once("ready", () => {
   });
 
   console.log("毎日18時の投稿スケジュールをセットしました");
+});
+
+
+// =============================
+// 🎮 テスト投稿 "!test"
+// =============================
+client.on(Events.MessageCreate, async (message) => {
+  if (message.content === "!test") {
+    const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+    await channel.send("⏳ **最新のはてなブックマーク総合ランキングを取得中…**");
+
+    const msg = await fetchHatenaTop10();
+    await channel.send(msg);
+  }
 });
 
 client.login(process.env.DISCORD_TOKEN);
