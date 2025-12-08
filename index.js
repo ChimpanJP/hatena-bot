@@ -1,4 +1,4 @@
-import { Client, GatewayIntentBits, Events } from "discord.js";
+import { Client, GatewayIntentBits } from "discord.js";
 import cron from "node-cron";
 import Parser from "rss-parser";
 import dotenv from "dotenv";
@@ -8,16 +8,16 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent // ← !test を読むために必要
+    GatewayIntentBits.MessageContent
   ]
 });
 
 const parser = new Parser();
 
-// はてなブックマーク総合 RSS
+// RSS URL
 const RSS_URL = "https://b.hatena.ne.jp/hotentry.rss";
 
-// はてなブックマークTOP10取得
+// はてなブックマーク TOP10
 async function fetchHatenaTop10() {
   try {
     const feed = await parser.parseURL(RSS_URL);
@@ -33,9 +33,8 @@ async function fetchHatenaTop10() {
 }
 
 client.once("ready", () => {
-  console.log(`ログイン成功：${client.user.tag}`);
 
-  // 毎日18:00に実行（日本時間）
+  // 毎日18:00（日本時間）に投稿
   cron.schedule("0 18 * * *", async () => {
     try {
       const channel = await client.channels.fetch(process.env.CHANNEL_ID);
@@ -47,18 +46,21 @@ client.once("ready", () => {
     } catch (err) {
       console.error("投稿エラー:", err);
     }
-  });
+  }, { timezone: "Asia/Tokyo" });
 
   console.log("毎日18時の投稿スケジュールをセットしました");
 });
 
 
 // =============================
-// 🎮 テスト投稿 "!test"
+// 🎮 "!test" で手動テスト
 // =============================
-client.on(Events.MessageCreate, async (message) => {
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+
   if (message.content === "!test") {
     const channel = await client.channels.fetch(process.env.CHANNEL_ID);
+
     await channel.send("⏳ **最新のはてなブックマーク総合ランキングを取得中…**");
 
     const msg = await fetchHatenaTop10();
