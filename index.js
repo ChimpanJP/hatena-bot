@@ -14,11 +14,11 @@ const client = new Client({
 
 const parser = new Parser();
 
-// RSS URL
-const RSS_URL = "https://b.hatena.ne.jp/hotentry.rss";
+// Yahoo!ニュース「総合アクセスランキング」
+const RSS_URL = "https://news.yahoo.co.jp/rss/topics/top-picks.xml";
 
-// はてなブックマーク TOP10
-async function fetchHatenaTop10() {
+// Yahoo!ニュース TOP10 取得
+async function fetchYahooTop10() {
   try {
     const feed = await parser.parseURL(RSS_URL);
     const items = feed.items.slice(0, 10);
@@ -34,13 +34,13 @@ async function fetchHatenaTop10() {
 
 client.once("ready", () => {
 
-  // 毎日18:00（日本時間）に投稿
+  // 毎日18:00 に投稿（日本時間）
   cron.schedule("0 18 * * *", async () => {
     try {
       const channel = await client.channels.fetch(process.env.CHANNEL_ID);
-      await channel.send("📚 **今日のはてなブックマーク総合ランキング TOP10**");
+      await channel.send("📰 **今日のYahoo!ニュース ランキング TOP10**");
 
-      const message = await fetchHatenaTop10();
+      const message = await fetchYahooTop10();
       await channel.send(message);
 
     } catch (err) {
@@ -61,9 +61,9 @@ client.on("messageCreate", async (message) => {
   if (message.content === "!test") {
     const channel = await client.channels.fetch(process.env.CHANNEL_ID);
 
-    await channel.send("⏳ **最新のはてなブックマーク総合ランキングを取得中…**");
+    await channel.send("⏳ **最新のYahoo!ニュースランキングを取得中…**");
 
-    const msg = await fetchHatenaTop10();
+    const msg = await fetchYahooTop10();
     await channel.send(msg);
   }
 });
